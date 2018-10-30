@@ -7,6 +7,9 @@ public class Producto {
     Integer precio;
 
 
+    public Producto (){
+
+    }
 
     public Producto(String id, String nombre, Integer precio) {
         this.id = id;
@@ -36,6 +39,12 @@ public class Producto {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public String getPreciofromString(Producto producto){
+        String numberAsString = String.valueOf(producto.getPrecio());
+        String precio = " $ " + numberAsString;
+        return precio;
     }
 
     @Override

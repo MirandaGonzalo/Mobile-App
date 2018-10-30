@@ -10,13 +10,11 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
-
-
 public class MainActivity extends AppCompatActivity {
-
     FirebaseDatabase database = FirebaseDatabase.getInstance();
     DatabaseReference myRef = database.getReference();
 
@@ -25,11 +23,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-    }
-
-    public void verProductos(View view){
-        Intent myIntent = new Intent(view.getContext(), second_window.class);
-        startActivityForResult(myIntent, 0);
     }
 
     public void onSaludo(View view) {
@@ -45,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
         val_nombre.setText("");
         val_precio.setText("");
     }
+
 }
 
 
