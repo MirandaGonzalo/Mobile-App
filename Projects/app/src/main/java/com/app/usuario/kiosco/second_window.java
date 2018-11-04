@@ -6,7 +6,9 @@ import android.content.Intent;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.Editable;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.AdapterView;
@@ -14,8 +16,12 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -34,28 +40,30 @@ public class second_window extends AppCompatActivity {
     public static final String PRODUCTO_PRECIO = "net.simplifiedcoding.firebasedatabaseexample.productoprecio";
 
     //view objects
-    EditText editTextNombre;
-    Button buttonAddArtist;
+    Button btn_layout_cargar, btn_crear, button;
     ListView listViewProductos;
-
-    //a list to store all the artist from firebase database
+    TextView user_title;
+    private ArrayAdapter adapter;
     List<Producto> productos;
-    private EditText editTextFilter;
-    //our database reference object
+    private ProgressBar progressBar2;
     DatabaseReference databaseProductos;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_second_window);
-
-        //getting the reference of artists node
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        String email = user.getEmail();
+        user_title = (TextView) findViewById(R.id.user_title);
+        user_title.setText("Hola " + email);
         databaseProductos = FirebaseDatabase.getInstance().getReference("Productos");
         listViewProductos = (ListView) findViewById(R.id.listViewProductos);
-
-        buttonAddArtist = (Button) findViewById(R.id.buttonAddArtist);
-
-        //list to store artists
+        btn_layout_cargar = (Button) findViewById(R.id.btn_layout_cargar);
+        button = (Button) findViewById(R.id.button);
+        button.setBackgroundColor(getResources().getColor(R.color.red));
+        btn_layout_cargar.setBackgroundColor(getResources().getColor(R.color.green));
+        progressBar2 = (ProgressBar) findViewById(R.id.progressBar2);
         productos = new ArrayList<>();
 
 
@@ -63,16 +71,16 @@ public class second_window extends AppCompatActivity {
             @Override
             public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
                 Producto producto = productos.get(i);
-                showUpdateDeleteDialog(producto.getId(), producto.getNombre());
+                showUpdateDeleteDialog(producto.getId(), producto.getNombre(), producto.getPrecio());
                 return true;
             }
         });
 
         //adding an onclicklistener to button
-        buttonAddArtist.setOnClickListener(new View.OnClickListener() {
+        btn_layout_cargar.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                addProducto();
+                builderProducto();
             }
         });
 
@@ -93,6 +101,7 @@ public class second_window extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         //attaching value event listener
+        progressBar2.setVisibility(View.VISIBLE);
         databaseProductos.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
@@ -110,7 +119,7 @@ public class second_window extends AppCompatActivity {
 
                 //creating adapter
                 ProductoList artistAdapter = new ProductoList(second_window.this, productos);
-                //attaching adapter to the listview
+                progressBar2.setVisibility(View.GONE);
                 listViewProductos.setAdapter(artistAdapter);
             }
 
@@ -141,18 +150,22 @@ public class second_window extends AppCompatActivity {
         return true;
     }
 
-    private void showUpdateDeleteDialog(final String id, String prodName) {
+    private void showUpdateDeleteDialog(final String id, String prodName, Integer prodPrecio) {
         AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
         LayoutInflater inflater = getLayoutInflater();
         final View dialogView = inflater.inflate(R.layout.update_dialog, null);
         dialogBuilder.setView(dialogView);
-        final EditText editTextName = (EditText) dialogView.findViewById(R.id.editTextName);
         final Button buttonUpdate = (Button) dialogView.findViewById(R.id.buttonUpdateProduct);
         final Button buttonDelete = (Button) dialogView.findViewById(R.id.buttonDeleteProduct);
-        dialogBuilder.setTitle(prodName);
+        String titulo = "Datos de " + prodName;
+        dialogBuilder.setTitle(titulo);
         final AlertDialog b = dialogBuilder.create();
+        final EditText nombre_u = (EditText) dialogView.findViewById(R.id.editNombre);
+        nombre_u.setText(prodName);
+        final EditText precio_u = (EditText) dialogView.findViewById(R.id.editPrecio);
+        String numberAsString = String.valueOf(prodPrecio);
+        precio_u.setText(numberAsString);
         b.show();
-
 
         buttonUpdate.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -165,8 +178,12 @@ public class second_window extends AppCompatActivity {
                     int precio = 0;
                     if(! TextUtils.isEmpty(ageText)){
                         precio = Integer.parseInt(ageText);
-                        updateProducto(id, text, precio);
-                        b.dismiss();
+                        if (precio >= 99999){
+                            Toast.makeText(getApplicationContext(), "El precio no es valido, el maximo es $99999.", Toast.LENGTH_LONG).show();
+                        } else {
+                            updateProducto(id, text, precio);
+                            b.dismiss();
+                        }
                     } else {
                         Toast.makeText(getApplicationContext(), "Escribe un Precio", Toast.LENGTH_LONG).show();
                     }
@@ -187,35 +204,58 @@ public class second_window extends AppCompatActivity {
                         b.dismiss();
                     }
                 });
-
             }
         });
     }
 
-    /*
-     * This method is saving a new artist to the
-     * Firebase Realtime Database
-     * */
-    private void addProducto() {
-        EditText editNombre = (EditText) findViewById(R.id.editTextName);
-        String name = editNombre.getText().toString().trim();
-        if (!TextUtils.isEmpty(name)) {
-            EditText editP = (EditText) findViewById(R.id.editTextPrecio);
-            String ageText = editP.getText().toString();
-            int precio = 0;
-            if(! TextUtils.isEmpty(ageText)){
-                precio = Integer.parseInt(ageText);
-                String id = databaseProductos.push().getKey();
-                Producto producto = new Producto(id, name, precio);
-                databaseProductos.child(id).setValue(producto);
-                editNombre.setText("");
-                editP.setText("");
-                Toast.makeText(this, "Producto Creado.", Toast.LENGTH_LONG).show();
-            } else {
-                Toast.makeText(this, "Escribe un Precio", Toast.LENGTH_LONG).show();
+    private void builderProducto() {
+        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
+        LayoutInflater inflater = getLayoutInflater();
+        final View dialogView = inflater.inflate(R.layout.create_dialog, null);
+        dialogBuilder.setView(dialogView);
+        dialogBuilder.setTitle("Crear Producto:");
+        final AlertDialog c = dialogBuilder.create();
+        c.show();
+        btn_crear = (Button) c.findViewById(R.id.btn_crear);
+
+        btn_crear.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                EditText editNombre = (EditText) c.findViewById(R.id.create_nombre);
+                String name = editNombre.getText().toString().trim();
+                if (!TextUtils.isEmpty(name)) {
+                    EditText editP = (EditText) c.findViewById(R.id.create_precio);
+                    String ageText = editP.getText().toString();
+                    int precio = 0;
+                    if(! TextUtils.isEmpty(ageText)){
+                        precio = Integer.parseInt(ageText);
+                        if (precio >= 99999){
+                            Toast.makeText(getApplicationContext(), "El precio no es valido, el maximo es $99999.", Toast.LENGTH_LONG).show();
+                        } else {
+                            String id = databaseProductos.push().getKey();
+                            Producto producto = new Producto(id, name, precio);
+                            databaseProductos.child(id).setValue(producto);
+                            editNombre.setText("");
+                            editP.setText("");
+                            Toast.makeText(getApplicationContext(), producto.getNombre() + " Creado.", Toast.LENGTH_LONG).show();
+                            c.dismiss();
+                        }
+                    }
+                    else {
+                        Toast.makeText(getApplicationContext(), "Escribe un Precio !", Toast.LENGTH_LONG).show();
+                    }
+                } else {
+                    Toast.makeText(getApplicationContext(), "Escribe un Nombre !", Toast.LENGTH_LONG).show();
+                }
             }
-        } else {
-            Toast.makeText(this, "Escribe un Nombre", Toast.LENGTH_LONG).show();
-        }
+        });
+
+    }
+
+
+    public void logOut(View view){
+        FirebaseAuth.getInstance().signOut();
+        Intent i=new Intent(second_window.this, MainActivity.class);
+        startActivity(i);
     }
 }

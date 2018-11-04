@@ -7,13 +7,13 @@
 
 
     <EditText
-        android:id="@+id/editNombre"
+        android:id="@+id/create_nombre"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="Nombre" />
 
     <EditText
-        android:id="@+id/editPrecio"
+        android:id="@+id/create_precio"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="Precio"
@@ -25,18 +25,11 @@
         android:orientation="horizontal">
 
         <Button
-            android:id="@+id/buttonUpdateProduct"
+            android:id="@+id/btn_crear"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Actualizar" />
-
-        <Button
-            android:id="@+id/buttonDeleteProduct"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Eliminar" />
+            android:text="Crear" />
 
     </LinearLayout>
 

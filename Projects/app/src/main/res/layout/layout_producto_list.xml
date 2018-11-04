@@ -8,6 +8,7 @@
         android:id="@+id/textViewNombre"
         android:layout_width="120dp"
         android:layout_height="wrap_content"
+        android:textColor="@color/blue"
         android:textAppearance="@style/Base.TextAppearance.AppCompat.Large"
         tools:text="Nombre" />
 
